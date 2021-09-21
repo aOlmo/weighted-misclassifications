@@ -1,0 +1,9 @@
+python=3.7.0
+tensorflow-gpu=2.1.0
+scikit-learn
+GPUtil
+tqdm
+Pillow
+pandas
+numpy
+opencv-python
