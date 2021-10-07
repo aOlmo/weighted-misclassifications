@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from torchvision import transforms, datasets
 from Imagenet import Imagenet
-from tensorflow.keras.datasets import cifar100
+from tensorflow.keras.datasets import cifar100, cifar10
 
 np.random.seed(1337)  # for reproducibility
 
@@ -19,18 +19,33 @@ from scipy import ndimage
 from nltk.corpus import wordnet as wn
 from sklearn.preprocessing import normalize
 
-
 NUM_CLASSES = 10
+
 
 # --------------------------------------------------------------- #
 # -                          Cifar10                            - #
 # --------------------------------------------------------------- #
 def load_cifarX(dataset):
+    cifar_dataset = cifar10 if "cifar10" == dataset else cifar100
+    (x_train, y_train), (x_test, y_test) = cifar_dataset.load_data()
+
+    # Normalize data.
+    x_train = x_train.astype("float32") / 255
+    x_test = x_test.astype("float32") / 255
+
+    x_train_mean = np.mean(x_train, axis=0)
+    x_train -= x_train_mean
+    x_test -= x_train_mean
+
+    return (x_train, y_train), (x_test, y_test)
+
+
+def load_cifarX_test(dataset):
     if "cifar10_1" in dataset:
         path = "/data/alberto/datasets/CIFAR-10.1/datasets/"
         x = os.path.join(path, "cifar10.1_v6_data.npy")
         y = os.path.join(path, "cifar10.1_v6_labels.npy")
-        x_test, y_test = np.load(x).astype("float32")/255, np.load(y)
+        x_test, y_test = np.load(x).astype("float32") / 255, np.load(y)
 
     elif "cifar10_extra" in dataset or "cifar100_extra" in dataset:
         transform = transforms.Compose([transforms.ToTensor()])
@@ -49,7 +64,7 @@ def load_cifarX(dataset):
         types.remove("labels.npy")
         for type in types:
             x = os.path.join(path, f"{type}")
-            x_test.append(np.load(x).astype("float32")/255)
+            x_test.append(np.load(x).astype("float32") / 255)
             y = np.load(os.path.join(path, "labels.npy"))
             y_test.append(y)
         x_test = np.vstack(x_test)
@@ -91,7 +106,19 @@ def load_cifarX(dataset):
         x_train -= x_train_mean
         x_test -= x_train_mean
 
+    elif "cifar10" == dataset:
+        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+
+        # Normalize data.
+        x_train = x_train.astype("float32") / 255
+        x_test = x_test.astype("float32") / 255
+
+        x_train_mean = np.mean(x_train, axis=0)
+        x_train -= x_train_mean
+        x_test -= x_train_mean
+
     return x_test, y_test
+
 
 # --------------------------------------------------------------- #
 # -                          ImageNet                           - #
@@ -104,6 +131,7 @@ def get_Cifar10_to_ImageNet_classes():
 
     return np.array(labels)
 
+
 def get_ImageNet_CHL_cmat(savefname=False, norm=True):
     name = "CHL"
     norm_unnorm = "normalized" if norm else "unnormalized"
@@ -111,7 +139,7 @@ def get_ImageNet_CHL_cmat(savefname=False, norm=True):
     C10_cmat_filename = "./confusion_matrices/cifar10_{}_cmat.npy".format(name)
 
     if not os.path.exists(savefile):
-        ImageNet_cmat = np.identity(1000, dtype=float)*4.0
+        ImageNet_cmat = np.identity(1000, dtype=float) * 4.0
         C10_cmat = np.load(C10_cmat_filename)
         map = get_Cifar10_to_ImageNet_classes()
 
@@ -129,11 +157,12 @@ def get_ImageNet_CHL_cmat(savefname=False, norm=True):
     print("[+]: Loading ImageNet {} from {}".format(name, savefile))
     return np.load(savefile)
 
+
 def get_ImageNet_EKL_cmat():
     nltk.download('wordnet')
     savefile = "./confusion_matrices/ImageNet_EKL_cmat.npy"
 
-    obj = Imagenet()
+    obj = ImagenetManualLoad()
     imagenet_dict = obj.load_dict()
 
     try:
@@ -158,6 +187,7 @@ def get_ImageNet_EKL_cmat():
         print("[+]: Saving {}".format(savefile))
         np.save(savefile, conf_mat)
         return conf_mat
+
 
 # --------------------------------------------------------------- #
 # --------------------------------------------------------------- #
@@ -190,6 +220,7 @@ def get_cifarX_EKL_cmat(cifar_dataset):
 
     return conf_mat
 
+
 def plot_confusion_matrix(cmat, dataset_name):
     with open("misc/{}_class_names".format(dataset_name), "r") as file:
         classes = [line.strip() for line in file]
@@ -217,9 +248,11 @@ def plot_cmat(matrix):
 
     ax = sns.heatmap(matrix, annot=True, fmt="d", cmap="YlGnBu", norm=norm)
 
+
 def plot_cmat_basic(cmat, title="title", cmap="YlGnBu", vmax=1500, vmin=None):
-    sns.heatmap(cmat, cmap=cmap, fmt="d", annot=True, annot_kws={"fontsize":8}, vmax=vmax, vmin=vmin).set_title(title)
+    sns.heatmap(cmat, cmap=cmap, fmt="d", annot=True, annot_kws={"fontsize": 8}, vmax=vmax, vmin=vmin).set_title(title)
     plt.show()
+
 
 def get_confusion_matrix(y_pred, y_test, n_classes=10):
     if len(y_pred.shape) > 1: y_pred = np.argmax(y_pred, axis=0)
@@ -275,4 +308,3 @@ def deNoiseBatch(X):
     for x in X:
         deNoise(x)
     return X
-

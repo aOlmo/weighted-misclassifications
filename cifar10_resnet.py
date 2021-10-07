@@ -1,70 +1,37 @@
 import nltk
+
 nltk.download('wordnet')
 
 from resnetv2 import *
 import numpy as np
-from sklearn.preprocessing import normalize
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from tensorflow.keras.callbacks import ReduceLROnPlateau
 from tensorflow.keras.datasets import cifar10
+from sklearn.metrics import accuracy_score
 
-import configparser
 from losses import WeightedCC
 import utils
 
-def lr_schedule(epoch):
-    """Learning Rate Schedule
-
-    Learning rate is scheduled to be reduced after 80, 120, 160, 180 epochs.
-    Called automatically every epoch as part of callbacks during training.
-
-    # Arguments
-        epoch (int): The number of epochs
-
-    # Returns
-        lr (float32): learning rate
-    """
-    lr = 1e-3
-    if epoch > 180:
-        lr *= 0.5e-4
-    elif epoch > 160:
-        lr *= 1e-4
-    elif epoch > 120:
-        lr *= 1e-1
-    elif epoch > 80:
-        lr *= 1e-1
-    print("Learning rate: ", lr)
-    return lr
 
 def get_callbacks(WEIGHTS_FILE):
-    checkpoint = ModelCheckpoint(
-        filepath=WEIGHTS_FILE, monitor="val_acc", verbose=1, save_best_only=True
-    )
+    checkpoint = ModelCheckpoint(filepath=WEIGHTS_FILE, monitor="val_accuracy", verbose=1, save_best_only=True)
+    lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1), cooldown=0, patience=5, min_lr=0.5e-6)
+    return [checkpoint, lr_reducer]
 
-    lr_scheduler = LearningRateScheduler(lr_schedule)
 
-    lr_reducer = ReduceLROnPlateau(
-        factor=np.sqrt(0.1), cooldown=0, patience=5, min_lr=0.5e-6
-    )
+def retrain_model(model, cmat_name, cmat_path):
+    callbacks = get_callbacks(RETRAINED_WEIGHTS)
 
-    return [checkpoint, lr_reducer, lr_scheduler]
-
-def retrain_model(model):
-    RETRAINED_WEIGHTS = "saved_models/cifar10_resnetv2_wlf_wordnet_200.h5"
-
-    weight_matrix = np.load(WEIGHTED_LOSS_FILE)
+    weight_matrix = np.load(cmat_path)
     wcc = WeightedCC(weights=weight_matrix)
     explicable_loss = wcc.get_loss()
     model.compile(
         loss=explicable_loss,
-        optimizer=Adam(),
-        metrics=["accuracy"],
+        optimizer=Adam(1e-7),
+        metrics=["accuracy"],  # TODO: Can save best model only with val_acc available
     )
 
-    callbacks = get_callbacks(RETRAINED_WEIGHTS)
-
-    print("Not using data augmentation.")
     model.fit(
         x_train,
         y_train,
@@ -76,74 +43,86 @@ def retrain_model(model):
     )
 
     # Save the retrained model
-    # model.save(RETRAINED_WEIGHTS)
+    model.save(RETRAINED_WEIGHTS)
     print("Saved trained model at %s " % RETRAINED_WEIGHTS)
 
-    # Accuracy and Confusion-matrix based evaluations
-    utils.evaluate(
-        model, x_test, y_test, image_file_name=IMAGE_FILE,
-    )
+    y_pred = model.predict(x_test)
+    residuals = np.argmax(y_pred, 1) != np.argmax(y_test, 1)
 
-    predicted_x = model.predict(x_test)
-    residuals = np.argmax(predicted_x,1)!=np.argmax(y_test,1)
-
-    loss = sum(residuals)/len(residuals)
-    print("Cifar10 WLF ResNet Accuracy: ", 1-loss)
+    loss = sum(residuals) / len(residuals)
+    print(f"Cifar10 WLF ResNet {cmat_name} Accuracy: {1 - loss}")
 
 if __name__ == '__main__':
     batch_size = 128  # orig paper trained all networks with batch_size=128
-    epochs = 100
+    epochs = 30
 
-    FILEPATH = "./saved_models/cifar10_ResNet29v2_base.200.h5"
-    c10_wn_cmat_fname = "confusion_matrices/cifar10_EKL_cmat.npy"
-    IMAGE_FILE = "images/cmat_c10_resnetv2_wn_new.png"
+    dataset = "cifar10"
+    cmat_name = "EKL"
+    cmat_path = f"confusion_matrices/cifar10_{cmat_name}_cmat.npy"
 
-    WEIGHTED_LOSS_FILE = c10_wn_cmat_fname
-
+    RETRAIN, EVALUATE = False, True
+    RETRAINED_WEIGHTS = "saved_models/cifar10_resnetv2_{}_new.h5".format(cmat_name)
+    CCE_WEIGHTS = "./saved_models/cifar10_ResNet29v2_base.200.h5"
 
     ####################### LOAD DATA ###########################
     #############################################################
 
-    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-    x_train = x_train.astype('float32')
-    x_test = x_test.astype('float32')
-
+    (x_train, y_train), (x_test, y_test) = utils.load_cifarX(dataset)
     y_train = tensorflow.keras.utils.to_categorical(y_train, 10)
     y_test = tensorflow.keras.utils.to_categorical(y_test, 10)
 
     ####################### GET CMAT ############################
     #############################################################
 
-    # try:
-    #     c10_wn_cmat = np.load(c10_wn_cmat_fname)
-    # except:
-    print("[+]: Getting Cifar10 confusion matrix from WordNet")
-    c10_wn_cmat = utils.get_cifarX_EKL_cmat("cifar10")
-    c10_wn_cmat = normalize(c10_wn_cmat, "l1")
-    np.save(c10_wn_cmat_fname, c10_wn_cmat)
+    print("[+]: Getting Cifar10 confusion matrix")
+    c10_wn_cmat = np.load(cmat_path)
 
     ####################### MODEL RETRAIN #######################
     #############################################################
 
     input_shape = x_train.shape[1:]
-    # Depth of the initial ResNetv2 model
-    depth = 3 * 9 + 2
-    model = resnet_v2(input_shape=input_shape, depth=depth)
-    model.load_weights(FILEPATH)
+    model = resnet_v2(input_shape=input_shape, depth=3 * 9 + 2)
 
-    retrain_model(model)
+    if RETRAIN:
+        model.load_weights(CCE_WEIGHTS)
+        print(f"Accuracy for CCE Resnetv2 {accuracy_score(np.argmax(model.predict(x_test), 1), np.argmax(y_test, 1))}")
+        print("[+]: Retraining...")
+        retrain_model(model, cmat_name, cmat_path)
 
     #############################################################
     #############################################################
 
-    # Accuracy and Confusion-matrix based evaluations
-    utils.evaluate(
-        model, x_test, y_test, image_file_name=IMAGE_FILE,
-    )
+    if EVALUATE:
+        IHL_cmat = np.load("confusion_matrices/cifar10_IHL_cmat.npy")
+        np.fill_diagonal(IHL_cmat, 0)
+        IHL_expl_labels = np.argmax(IHL_cmat, 1)
+        y_test = np.argmax(y_test, 1)
 
-    predicted_x = model.predict(x_test)
-    residuals = np.argmax(predicted_x,1)!=np.argmax(y_test,1)
+        mapping = {}
+        for k, v in enumerate(IHL_expl_labels):
+            mapping[k] = v
 
-    loss = sum(residuals)/len(residuals)
-    print("Accuracy: ", 1-loss)
+        for loss_type in ["base.200", "IHL", "CHL", "EKL"]:
+            print(f"Evaluating {loss_type}\n--")
+            model.load_weights("./saved_models/cifar10_ResNet29v2_{}.h5".format(loss_type))
+            y_pred = np.argmax(model.predict(x_test), 1)
 
+            residuals = y_pred != y_test
+            y_pred_miscl, y_test_miscl = y_pred[residuals], y_test[residuals]
+            # Gets the labels predicted by IHL assuming is our golden model
+            y_IHL_golden = np.vectorize(mapping.get)(y_test_miscl)
+            acc = accuracy_score(y_IHL_golden, y_pred_miscl)
+            print(f"Pred accuracy: {1 - sum(residuals) / len(residuals)} \nAccuracy wrt IHL: {acc}")
+
+
+##################################################
+##################################################
+# except:
+# c10_wn_cmat = utils.get_cifarX_EKL_cmat("cifar10")
+# c10_wn_cmat = normalize(c10_wn_cmat, "l1")
+# np.save(c10_wn_cmat_fname, c10_wn_cmat)
+
+# Accuracy and Confusion-matrix based evaluations
+# utils.evaluate(
+#     model, x_test, y_test, image_file_name=IMAGE_FILE,
+# )

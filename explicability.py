@@ -229,7 +229,7 @@ if __name__ == '__main__':
 
     names = ["base", "IHL", "CHL", "EKL"]
     model_files = ["cifar10_ResNet29v2_base.200.h5", "cifar10_ResNet29v2_IHL.h5", "cifar10_ResNet29v2_CHL.h5", "cifar10_ResNet29v2_EKL.h5"]
-    cmat_files = ["cifar10_IHL_cmat_prev.npy", "cifar10_CHL_cmat_prev.npy", "cifar10_EKL_cmat_prev.npy"]
+    cmat_files = ["cifar10_IHL_cmat.npy", "cifar10_CHL_cmat.npy", "cifar10_EKL_cmat.npy"]
     input_shape = (32, 32, 3) if "cifar" in dataset else (299, 299, 3)
 
     models_data_file = "misc/models_data_{}.pkl"
