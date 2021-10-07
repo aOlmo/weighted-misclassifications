@@ -10,7 +10,7 @@ from PIL import Image
 from statistics import mean
 from tensorflow.keras.datasets import cifar10
 from matplotlib.pyplot import imsave
-from ImagenetManualLoad import ImagenetManualLoad
+from Imagenet import Imagenet
 from pdb import set_trace as st
 
 random.seed(0)
@@ -38,7 +38,7 @@ except:
 def save_grid_and_images_for_userstudy_imagenet():
     f = open("./human_studies/preds/preds_imagenet_true_base_ekl.txt", "r")
 
-    obj = ImagenetManualLoad()
+    obj = Imagenet()
 
     imgs_to_save = []
     for line in f:

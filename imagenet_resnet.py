@@ -10,7 +10,7 @@ import time
 import GPUtil
 import argparse
 import numpy as np
-from ImagenetManualLoad import ImagenetManualLoad
+from Imagenet import Imagenet
 
 
 from tqdm import tqdm
@@ -48,7 +48,7 @@ def compile_WLF_model(model, name, lr=1e-5):
 
 
 def val_model(model, keras_eval=False, n=50000):
-    obj = ImagenetManualLoad()
+    obj = Imagenet()
     x_val, y_val = obj.get_X_Y_ImageNet("val", preprocess=True, n=n)
 
     if not keras_eval:
@@ -68,7 +68,7 @@ def train_and_save_model(config, model):
     val_split = float(config["CONST"]["val_split"])
     batch_size = int(config["CONST"]["batch_size"])
 
-    obj = ImagenetManualLoad()
+    obj = Imagenet()
     X, Y = obj.get_X_Y_ImageNet("val", preprocess=True)
     Y = to_categorical(Y, 1000)
     x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=val_split, random_state=SEED, shuffle=False)
@@ -143,7 +143,7 @@ def compile_cce(model):
 
 if __name__ == '__main__':
 
-    config = ImagenetManualLoad().get_config()
+    config = Imagenet().get_config()
 
     NGPUs = int(config["CONST"]["n_gpu"])
     available_GPUs = GPUtil.getAvailable(order='first', limit=NGPUs, maxLoad=0.5, maxMemory=0.5, includeNan=False, excludeID=[], excludeUUID=[])

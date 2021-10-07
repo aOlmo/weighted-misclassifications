@@ -96,10 +96,10 @@ if __name__ == '__main__':
         "african_elephant.jpg", " https://i.imgur.com/Bvro0YD.png"
     )
 
-    # from ImagenetManualLoad import ImagenetManualLoad
+    # from Imagenet import Imagenet
     img_size = (299, 299)
 
-    # inet = ImagenetManualLoad()
+    # inet = Imagenet()
     # X_test, y_test = inet.get_X_Y_ImageNet("val", n=1000)
 
     model_builder = keras.applications.xception.Xception

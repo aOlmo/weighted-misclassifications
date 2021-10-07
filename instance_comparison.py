@@ -14,7 +14,7 @@ from tensorflow.keras.datasets import cifar100
 from tensorflow.keras.utils import multi_gpu_model, to_categorical
 from cifarvgg.cifar10vgg import cifar10vgg
 from cifarvgg.cifar100vgg import cifar100vgg
-from ImagenetManualLoad import ImagenetManualLoad
+from Imagenet import Imagenet
 from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
 from imagenet_resnet_experiments import compile_WLF_model
 from utils import get_ImageNet_EKL_cmat
@@ -209,10 +209,10 @@ def plot_grid_egregious_images_imagenet():
     cmats = [get_ImageNet_EKL_cmat()]
     pv_f, pekl_f = ["./tmp/Imagenet_pred_v.npy", "./tmp/Imagenet_pred_ekl.npy"]
 
-    config = ImagenetManualLoad().get_config()
+    config = Imagenet().get_config()
     NGPUs = int(config["CONST"]["n_gpu"])
 
-    obj = ImagenetManualLoad()
+    obj = Imagenet()
     X, Y = obj.get_X_Y_ImageNet("val", preprocess=True, n=n)
     X_untouched = obj.get_X("val", preprocess=False, n=n)
     Y = to_categorical(Y, 1000)

@@ -15,7 +15,7 @@ import torchvision
 import tensorflow as tf
 import tensorflow.keras
 
-from ImagenetManualLoad import ImagenetManualLoad
+from Imagenet import Imagenet
 from resnetv2 import *
 from losses import WeightedCC
 from sklearn.metrics import accuracy_score
@@ -196,7 +196,7 @@ def compute_models_hard_soft_scores(model, models_data_file):
 
 def load_cifar10_imagenet(x_train_mean):
     from skimage.transform import resize
-    imgnet = ImagenetManualLoad()
+    imgnet = Imagenet()
     batch = 1300
 
     classes = [x.split(",")[2].strip() for x in list(open("misc/cifar10_to_imagenet_classnames", "r"))]
@@ -211,7 +211,7 @@ def load_cifar10_imagenet(x_train_mean):
     return np.vstack(x_test), np.hstack(y_test)
 
 def load_imagenet(n=10000):
-    imgnet = ImagenetManualLoad()
+    imgnet = Imagenet()
     x_test, y_test = imgnet.get_X_Y_ImageNet("val", n=n)
 
     return x_test, y_test

@@ -307,7 +307,7 @@ def cifar10_tutorial(
 
 
 def imagenet_adv():
-    from ImagenetManualLoad import ImagenetManualLoad
+    from Imagenet import Imagenet
     from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
     from tensorflow.keras.utils import multi_gpu_model
     from sklearn.metrics import accuracy_score
@@ -348,7 +348,7 @@ def imagenet_adv():
 
     N = 32
     chunks = N//32
-    obj = ImagenetManualLoad()
+    obj = Imagenet()
     x_test, y_test = obj.get_X_Y_ImageNet("val", preprocess=True, save_new=False, n=N)
     y_test = keras.utils.to_categorical(y_test, 1000)
 

@@ -9,7 +9,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 from torchvision import transforms, datasets
-from ImagenetManualLoad import ImagenetManualLoad
+from Imagenet import Imagenet
 from tensorflow.keras.datasets import cifar100
 
 np.random.seed(1337)  # for reproducibility
@@ -133,7 +133,7 @@ def get_ImageNet_EKL_cmat():
     nltk.download('wordnet')
     savefile = "./confusion_matrices/ImageNet_EKL_cmat.npy"
 
-    obj = ImagenetManualLoad()
+    obj = Imagenet()
     imagenet_dict = obj.load_dict()
 
     try:

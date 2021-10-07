@@ -13,7 +13,7 @@ from matplotlib.pyplot import imsave
 
 INPUT_SIZE = (299, 299)  # Default input size for ResNetv2-ImageNet
 
-class ImagenetManualLoad():
+class Imagenet():
     def __init__(self):
         self.config = self.get_config()
         self.dataset = self.config["CONST"]["dataset"]
@@ -74,7 +74,7 @@ class ImagenetManualLoad():
         return X, Y
 
     def get_config(self):
-        parser = argparse.ArgumentParser(description="ImagenetManualLoad, please input config file")
+        parser = argparse.ArgumentParser(description="Imagenet, please input config file")
         parser.add_argument('--config', type=str)
         args = parser.parse_args()
 

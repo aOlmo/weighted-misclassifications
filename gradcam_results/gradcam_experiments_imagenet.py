@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from PIL import ImageFilter
 from losses import WeightedCC
 from tensorflow.keras.optimizers import Adam
-from ImagenetManualLoad import ImagenetManualLoad
+from Imagenet import Imagenet
 from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.applications.inception_resnet_v2 import InceptionResNetV2
 
@@ -118,7 +118,7 @@ if __name__ == '__main__':
     img_size = (299, 299)
     N = 500
 
-    inet = ImagenetManualLoad()
+    inet = Imagenet()
     preprocess_input = keras.applications.xception.preprocess_input
 
     X_test, y_test = inet.get_X_Y_ImageNet("val", preprocess=False, n=N)
