@@ -19,7 +19,7 @@ from tensorflow.python.framework import ops
 
 c10 = ["airplane", "automobile", "bird", "cat", "deer",
        "dog", "frog", "horse", "ship", "truck"]
-savedir = "gradcam_results/"
+savedir = "./"
 
 def compile_model(model, weighted_loss_file):
     # Decide which loss function to use.

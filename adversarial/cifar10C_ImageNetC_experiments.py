@@ -57,7 +57,7 @@ if __name__ == '__main__':
         "EKL": "./saved_models/ImageNet1000_ResNetv2_EKL.h5",
     }
 
-    WEIGHTED_LOSS_FILE = "confusion_matrices/cifar10_EKL_cmat.npy"
+    WEIGHTED_LOSS_FILE = "../confusion_matrices/cifar10_EKL_cmat.npy"
     CIFAR10C_DIR = "/data/alberto/datasets/CIFAR-10-C/"
 
     ####################### LOAD DATA ###########################
